@@ -1,0 +1,58 @@
+//media
+@mixin screen-xs {
+    @media screen and (min-width: 360px) { @content; }
+}
+
+@mixin screen-min {
+    @media screen and (min-width: 568px) { @content; }
+}
+
+@mixin screen-sm {
+    @media screen and (min-width: 768px) and (min-height: 420px) { @content; }
+}
+
+@mixin screen-lg {
+    @media screen and (min-width: 1024px) { @content; }
+}
+
+@mixin on-desktop-view {
+    @media screen and (min-width: 1024px) and (orientation: portrait), (min-width: 1113px) and (orientation: landscape) {
+        @content;
+    }
+}
+
+@mixin on-desktop-view-xl {
+    @media screen and (min-width: 1366px) { @content; }
+}
+
+@mixin screen-max {
+    @media screen and (min-width: 1680px) { @content; }
+}
+
+@mixin on-desktop-view-xxl {
+    @media screen and (min-width: 1920px) { @content; }
+}
+
+@mixin landscape() {
+    @media screen and (min-width: 480px)
+        and (orientation: landscape)
+        and (max-height: 420px)
+        and (max-width: 900px) {
+        @content;
+    }
+}
+
+// iphone 5/5SE landscape and some smartphones
+@mixin iphone-five-landscape() {
+    @media only screen and (min-device-width: 320px)
+        and (max-device-width: 640px)
+        and (orientation: landscape) {
+        @content;
+    }
+}
+
+@mixin device-with-hover() {
+    @media (hover) {
+        @content;
+    }
+}

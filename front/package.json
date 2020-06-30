@@ -1,0 +1,24 @@
+{
+    "name": "front",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "dev": "parcel ./src/index.html",
+        "build": "parcel build ./src/index.html",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {},
+    "devDependencies": {
+        "@babel/core": "^7.10.3",
+        "parcel-bundler": "^1.12.4",
+        "sass": "^1.26.8"
+    },
+    "alias": {
+        "$": "./src",
+        "utils": "./src/utils/index.js"
+    }
+}
