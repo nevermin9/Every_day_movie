@@ -6,10 +6,10 @@ import { router } from '$/router';
 window.router = router;
 
 // components and pages
-import componentsAndPages from '$/componentsAndPages';
-console.log("componentsAndPages", componentsAndPages)
+import listOfComponents from '$/components';
+import listOfPages from '$/pages'
 
-for (const elem of componentsAndPages) {
+for (const elem of [...listOfComponents, ...listOfPages]) {
     customElements.define(elem.is, elem);
 }
 

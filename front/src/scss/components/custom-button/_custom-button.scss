@@ -1,0 +1,85 @@
+custom-button {
+    display: flex;
+    max-width: 200px;
+    height: 40px;
+    width: 100%;
+}
+
+.btn {
+    position: relative;
+    width: 100%;
+    border: 0;
+    padding: 0;
+    background-color: transparent;
+    text-transform: uppercase;
+    font-size: 16px;
+    cursor: pointer;
+    outline: none;
+}
+
+.btn__svg-block {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.btn__rect {
+    stroke: white;
+    stroke-width: 2;
+    stroke-dasharray: 400, 0;
+    transition-duration: .8s;
+    transition-property: all;
+}
+
+.btn__text {
+    font-weight: 700;
+    fill: white;
+    animation-duration: .8s;
+    animation-timing-function: ease-out;
+}
+
+.btn.btn--first {
+    .btn__rect {
+        stroke: white;
+    }
+
+    .btn__text {
+        fill: white;
+    }
+}
+
+.btn.btn--second {
+    .btn__rect {
+        stroke: #FFFF33	;
+    }
+
+    .btn__text {
+        fill: #FFFF33;
+    }
+}
+
+custom-button:hover .btn__rect {
+    stroke-dasharray: 100, 400;
+    stroke-dashoffset: 145%;
+}
+
+custom-button:hover .btn__text {
+    animation-name: text-transform;
+}
+
+@keyframes text-transform {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    30% {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+
+    50% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}

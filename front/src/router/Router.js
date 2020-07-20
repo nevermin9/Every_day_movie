@@ -32,7 +32,7 @@ export default class Router {
 
         history.pushState({}, null, this.root + clearSlashes(path));
         this.go(0);
-        this.current = { ...this.routes[index] }
+        this.current = { ...this.routes[index] };
         return this;
     }
 

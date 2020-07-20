@@ -1,6 +1,5 @@
 import Router from './Router';
 import MainPage from '$/pages/MainPage';
-import PageLayout from '$/components/Layout/PageLayout';
 import NotFoundPage from '$/pages/NotFoundPage';
 import SignInPage from '$/pages/SignInPage'
 

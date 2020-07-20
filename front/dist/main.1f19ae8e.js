@@ -528,6 +528,115 @@ var BaseComponents = /*#__PURE__*/function (_HTMLElement) {
 }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
 
 exports.default = BaseComponents;
+},{}],"../node_modules/bezier-easing/src/index.js":[function(require,module,exports) {
+/**
+ * https://github.com/gre/bezier-easing
+ * BezierEasing - use bezier curve for transition easing function
+ * by Gaëtan Renaudeau 2014 - 2015 – MIT License
+ */
+
+// These values are established by empiricism with tests (tradeoff: performance VS precision)
+var NEWTON_ITERATIONS = 4;
+var NEWTON_MIN_SLOPE = 0.001;
+var SUBDIVISION_PRECISION = 0.0000001;
+var SUBDIVISION_MAX_ITERATIONS = 10;
+
+var kSplineTableSize = 11;
+var kSampleStepSize = 1.0 / (kSplineTableSize - 1.0);
+
+var float32ArraySupported = typeof Float32Array === 'function';
+
+function A (aA1, aA2) { return 1.0 - 3.0 * aA2 + 3.0 * aA1; }
+function B (aA1, aA2) { return 3.0 * aA2 - 6.0 * aA1; }
+function C (aA1)      { return 3.0 * aA1; }
+
+// Returns x(t) given t, x1, and x2, or y(t) given t, y1, and y2.
+function calcBezier (aT, aA1, aA2) { return ((A(aA1, aA2) * aT + B(aA1, aA2)) * aT + C(aA1)) * aT; }
+
+// Returns dx/dt given t, x1, and x2, or dy/dt given t, y1, and y2.
+function getSlope (aT, aA1, aA2) { return 3.0 * A(aA1, aA2) * aT * aT + 2.0 * B(aA1, aA2) * aT + C(aA1); }
+
+function binarySubdivide (aX, aA, aB, mX1, mX2) {
+  var currentX, currentT, i = 0;
+  do {
+    currentT = aA + (aB - aA) / 2.0;
+    currentX = calcBezier(currentT, mX1, mX2) - aX;
+    if (currentX > 0.0) {
+      aB = currentT;
+    } else {
+      aA = currentT;
+    }
+  } while (Math.abs(currentX) > SUBDIVISION_PRECISION && ++i < SUBDIVISION_MAX_ITERATIONS);
+  return currentT;
+}
+
+function newtonRaphsonIterate (aX, aGuessT, mX1, mX2) {
+ for (var i = 0; i < NEWTON_ITERATIONS; ++i) {
+   var currentSlope = getSlope(aGuessT, mX1, mX2);
+   if (currentSlope === 0.0) {
+     return aGuessT;
+   }
+   var currentX = calcBezier(aGuessT, mX1, mX2) - aX;
+   aGuessT -= currentX / currentSlope;
+ }
+ return aGuessT;
+}
+
+function LinearEasing (x) {
+  return x;
+}
+
+module.exports = function bezier (mX1, mY1, mX2, mY2) {
+  if (!(0 <= mX1 && mX1 <= 1 && 0 <= mX2 && mX2 <= 1)) {
+    throw new Error('bezier x values must be in [0, 1] range');
+  }
+
+  if (mX1 === mY1 && mX2 === mY2) {
+    return LinearEasing;
+  }
+
+  // Precompute samples table
+  var sampleValues = float32ArraySupported ? new Float32Array(kSplineTableSize) : new Array(kSplineTableSize);
+  for (var i = 0; i < kSplineTableSize; ++i) {
+    sampleValues[i] = calcBezier(i * kSampleStepSize, mX1, mX2);
+  }
+
+  function getTForX (aX) {
+    var intervalStart = 0.0;
+    var currentSample = 1;
+    var lastSample = kSplineTableSize - 1;
+
+    for (; currentSample !== lastSample && sampleValues[currentSample] <= aX; ++currentSample) {
+      intervalStart += kSampleStepSize;
+    }
+    --currentSample;
+
+    // Interpolate to provide an initial guess for t
+    var dist = (aX - sampleValues[currentSample]) / (sampleValues[currentSample + 1] - sampleValues[currentSample]);
+    var guessForT = intervalStart + dist * kSampleStepSize;
+
+    var initialSlope = getSlope(guessForT, mX1, mX2);
+    if (initialSlope >= NEWTON_MIN_SLOPE) {
+      return newtonRaphsonIterate(aX, guessForT, mX1, mX2);
+    } else if (initialSlope === 0.0) {
+      return guessForT;
+    } else {
+      return binarySubdivide(aX, intervalStart, intervalStart + kSampleStepSize, mX1, mX2);
+    }
+  }
+
+  return function BezierEasing (x) {
+    // Because JavaScript number are imprecise, we should guarantee the extremes are right.
+    if (x === 0) {
+      return 0;
+    }
+    if (x === 1) {
+      return 1;
+    }
+    return calcBezier(getTForX(x), mY1, mY2);
+  };
+};
+
 },{}],"assets/videos/main_page_bg.mp4":[function(require,module,exports) {
 module.exports = "/main_page_bg.78601088.mp4";
 },{}],"pages/MainPage.js":[function(require,module,exports) {
@@ -539,6 +648,8 @@ Object.defineProperty(exports, "__esModule", {
 exports.default = void 0;
 
 var _BaseComponent2 = _interopRequireDefault(require("$/components/1BaseComponent/BaseComponent"));
+
+var _bezierEasing = _interopRequireDefault(require("bezier-easing"));
 
 var _main_page_bg = _interopRequireDefault(require("$/assets/videos/main_page_bg.mp4"));
 
@@ -568,6 +679,28 @@ function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.g
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
+var animId;
+var easing = (0, _bezierEasing.default)(0.85, 0, 0.15, 1);
+
+function returnAnimateFunction(destination) {
+  var startAnimTime = null;
+  var animDuration = 1200;
+  return function animate(time) {
+    if (!startAnimTime) startAnimTime = time;
+    var runtime = time - startAnimTime;
+    var progress = runtime / animDuration;
+    var dest = destination * easing(progress);
+    window.scrollBy(0, dest);
+
+    if (document.documentElement.scrollTop === destination) {
+      cancelAnimationFrame(animId);
+      return;
+    }
+
+    requestAnimationFrame(animate);
+  };
+}
+
 var MainPage = /*#__PURE__*/function (_BaseComponent) {
   _inherits(MainPage, _BaseComponent);
 
@@ -580,18 +713,25 @@ var MainPage = /*#__PURE__*/function (_BaseComponent) {
 
     _this = _super.call(this);
     _this.video = _main_page_bg.default;
+    _this.startAnimTime = null;
+    _this.innerHTML = _this.render();
+    _this.destination = _this.clientHeight / 2;
+    _this.animId = null;
+
+    _this.$('[data-anim-btn]').addEventListener('click', function () {
+      animId = requestAnimationFrame(returnAnimateFunction(_this.destination));
+    });
+
     return _this;
   }
 
   _createClass(MainPage, [{
     key: "connectedCallback",
-    value: function connectedCallback() {
-      this.innerHTML = this.render();
-    }
+    value: function connectedCallback() {}
   }, {
     key: "render",
     value: function render() {
-      return "\n            <main class=\"main-page\">\n                <video class=\"main-page__bg\" autoplay muted loop>\n                    <source src=\"".concat(this.video, "\" type=\"video/mp4\"></source>\n                </video>\n\n                <section class=\"main-page__content\">\n                    <custom-title class=\"main-page__title\" lvl=\"1\" value=\"EveryDayMovie\"></custom-title>\n\n                    <p class=\"main-page__text\">\n                        Get info about random movie every day!\n                    </p>\n\n                    <div class=\"main-page__action-block\">\n                        To have access you have to:\n\n                        <custom-button tag=\"button\" value=\"Sign up\" colorClass=\"first\"></custom-button>\n\n                        or\n\n                        <custom-button tag=\"a\" value=\"Sign in\" colorClass=\"second\" url=\"/signin\"></custom-button>\n                    </div>\n                </section>\n            </main>\n        ");
+      return "\n            <main class=\"main-page\">\n                <video class=\"main-page__bg\" autoplay muted loop>\n                    <source src=\"".concat(this.video, "\" type=\"video/mp4\"></source>\n                </video>\n\n                <section class=\"main-page__content\">\n                    <custom-title class=\"main-page__title\" lvl=\"1\" value=\"EveryDayMovie\"></custom-title>\n\n                    <p class=\"main-page__text\">\n                        Get info about random movie every day!\n                    </p>\n\n                    <div class=\"main-page__action-block\">\n                        To have access you have to:\n\n                        <custom-button data-anim-btn tag=\"button\" value=\"Sign up\" color-class=\"first\"></custom-button>\n\n                        or\n\n                        <custom-button tag=\"a\" value=\"Sign in\" color-class=\"second\" url=\"/signin\"></custom-button>\n                    </div>\n                </section>\n\n                <section class=\"main-page__content\">\n                    <sign-up-form></sign-up-form>\n                </section>\n            </main>\n        ");
     }
   }]);
 
@@ -601,72 +741,7 @@ var MainPage = /*#__PURE__*/function (_BaseComponent) {
 exports.default = MainPage;
 
 _defineProperty(MainPage, "nodeName", 'main-page');
-},{"$/components/1BaseComponent/BaseComponent":"components/1BaseComponent/BaseComponent.js","$/assets/videos/main_page_bg.mp4":"assets/videos/main_page_bg.mp4"}],"components/Layout/PageLayout.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-var _BaseComponent2 = _interopRequireDefault(require("$/components/1BaseComponent/BaseComponent"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
-
-function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
-
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Date.prototype.toString.call(Reflect.construct(Date, [], function () {})); return true; } catch (e) { return false; } }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-var PageLayout = /*#__PURE__*/function (_BaseComponent) {
-  _inherits(PageLayout, _BaseComponent);
-
-  var _super = _createSuper(PageLayout);
-
-  function PageLayout() {
-    _classCallCheck(this, PageLayout);
-
-    return _super.call(this);
-  }
-
-  _createClass(PageLayout, [{
-    key: "connectedCallback",
-    value: function connectedCallback() {
-      this.innerHTML = this.render();
-    }
-  }, {
-    key: "render",
-    value: function render() {
-      return "\n            <section class=\"page-layout\">\n                <main class=\"page-layout__main\">\n                    this.innerHTML\n                </main>\n            </section>\n        ";
-    }
-  }]);
-
-  return PageLayout;
-}(_BaseComponent2.default);
-
-exports.default = PageLayout;
-
-_defineProperty(PageLayout, "nodeName", 'page-layout');
-},{"$/components/1BaseComponent/BaseComponent":"components/1BaseComponent/BaseComponent.js"}],"pages/NotFoundPage.js":[function(require,module,exports) {
+},{"$/components/1BaseComponent/BaseComponent":"components/1BaseComponent/BaseComponent.js","bezier-easing":"../node_modules/bezier-easing/src/index.js","$/assets/videos/main_page_bg.mp4":"assets/videos/main_page_bg.mp4"}],"pages/NotFoundPage.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -808,8 +883,6 @@ var _Router = _interopRequireDefault(require("./Router"));
 
 var _MainPage = _interopRequireDefault(require("$/pages/MainPage"));
 
-var _PageLayout = _interopRequireDefault(require("$/components/Layout/PageLayout"));
-
 var _NotFoundPage = _interopRequireDefault(require("$/pages/NotFoundPage"));
 
 var _SignInPage = _interopRequireDefault(require("$/pages/SignInPage"));
@@ -837,7 +910,260 @@ var _default = {
   router: router
 };
 exports.default = _default;
-},{"./Router":"router/Router.js","$/pages/MainPage":"pages/MainPage.js","$/components/Layout/PageLayout":"components/Layout/PageLayout.js","$/pages/NotFoundPage":"pages/NotFoundPage.js","$/pages/SignInPage":"pages/SignInPage.js"}],"components/CustomTitle/CustomTitle.js":[function(require,module,exports) {
+},{"./Router":"router/Router.js","$/pages/MainPage":"pages/MainPage.js","$/pages/NotFoundPage":"pages/NotFoundPage.js","$/pages/SignInPage":"pages/SignInPage.js"}],"components/CustomButton/CustomButton.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _BaseComponent2 = _interopRequireDefault(require("$/components/1BaseComponent/BaseComponent"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Date.prototype.toString.call(Reflect.construct(Date, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var CustomButton = /*#__PURE__*/function (_BaseComponent) {
+  _inherits(CustomButton, _BaseComponent);
+
+  var _super = _createSuper(CustomButton);
+
+  function CustomButton() {
+    var _this;
+
+    _classCallCheck(this, CustomButton);
+
+    _this = _super.call(this);
+    _this.tag = null;
+    _this.colorClass = null;
+    _this.url = null;
+    _this.value = '';
+    _this.form = null;
+    _this.type = null;
+    return _this;
+  }
+
+  _createClass(CustomButton, [{
+    key: "connectedCallback",
+    value: function connectedCallback() {
+      if (!this.rendered) {
+        this.innerHTML = this.render();
+        this.rendered = false;
+      }
+
+      if (this.tag === 'a' && this.url !== null) {
+        this.setUrl();
+      }
+
+      if (this.tag === 'button' && this.form !== null) {
+        this.setFormAndType();
+      }
+    }
+  }, {
+    key: "attributeChangedCallback",
+    value: function attributeChangedCallback(attrName, oldVal, newVal) {
+      switch (attrName) {
+        case 'tag':
+          this.tag = newVal;
+          break;
+
+        case 'value':
+          this.value = newVal;
+          break;
+
+        case 'color-class':
+          this.colorClass = newVal;
+          break;
+
+        case 'url':
+          this.url = newVal;
+          break;
+
+        case 'form':
+          this.form = newVal;
+
+        case 'type':
+          this.type = newVal;
+      }
+    }
+  }, {
+    key: "setUrl",
+    value: function setUrl() {
+      this.$('.btn').setAttribute('href', this.url);
+    }
+  }, {
+    key: "setFormAndType",
+    value: function setFormAndType() {
+      var btn = this.$('.btn');
+      btn.setAttribute('form', this.form);
+      btn.setAttribute('type', this.type);
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      return "\n            <".concat(this.tag, " class=\"btn btn--").concat(this.colorClass, "\">\n                <svg class=\"btn__svg-block\"\n                    version=\"1.1\"\n                    baseProfile=\"full\"\n                    width=\"200\"\n                    height=\"40\"\n                    viewBox=\"0 0 200 40\"\n                    xmlns=\"http://www.w3.org/2000/svg\">\n\n                    <rect class=\"btn__rect\" x=\"0\" y=\"0\" width=\"200\" height=\"40\" fill=\"none\"/>\n\n                    <text class=\"btn__text\" x=\"50%\" y=\"50%\" alignment-baseline=\"middle\" text-anchor=\"middle\">\n                        ").concat(this.value, "\n                    </text>\n                </svg>\n            </").concat(this.tag, ">\n        ");
+    }
+  }], [{
+    key: "observedAttributes",
+    get: function get() {
+      return ['tag', 'value', 'color-class', 'url', 'form', 'type'];
+    }
+  }]);
+
+  return CustomButton;
+}(_BaseComponent2.default);
+
+exports.default = CustomButton;
+
+_defineProperty(CustomButton, "nodeName", 'custom-button');
+},{"$/components/1BaseComponent/BaseComponent":"components/1BaseComponent/BaseComponent.js"}],"components/CustomInput/CustomInput.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _BaseComponent2 = _interopRequireDefault(require("$/components/1BaseComponent/BaseComponent"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Date.prototype.toString.call(Reflect.construct(Date, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var CustomInput = /*#__PURE__*/function (_BaseComponent) {
+  _inherits(CustomInput, _BaseComponent);
+
+  var _super = _createSuper(CustomInput);
+
+  function CustomInput() {
+    var _this;
+
+    _classCallCheck(this, CustomInput);
+
+    _this = _super.call(this);
+    _this.name = null;
+    _this.type = null;
+    _this.placeholder = null;
+    _this.disabled = false;
+    _this.pattern = new RegExp(/^.$/);
+    _this.required = false;
+    _this.value = '';
+    _this.form = null;
+    return _this;
+  }
+
+  _createClass(CustomInput, [{
+    key: "connectedCallback",
+    value: function connectedCallback() {
+      this.innerHTML = this.render();
+      this.setBooleanAttributes();
+    }
+  }, {
+    key: "attributeChangedCallback",
+    value: function attributeChangedCallback(attrName, oldVal, newVal) {
+      switch (attrName) {
+        case 'name':
+          this.name = newVal;
+          break;
+
+        case 'type':
+          this.type = newVal;
+          break;
+
+        case 'placeholder':
+          this.placeholder = newVal;
+          break;
+
+        case 'required':
+          this.required = true;
+          break;
+
+        case 'value':
+          this.value = newVal;
+          break;
+
+        case 'form':
+          this.form = newVal;
+          break;
+      }
+    }
+  }, {
+    key: "setBooleanAttributes",
+    value: function setBooleanAttributes() {
+      var inputEl = this.$('input');
+
+      if (this.disabled) {
+        inputEl.disabled = true;
+      }
+
+      if (this.required) {
+        inputEl.required = true;
+      }
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      return "\n            <input id=\"".concat(this.name, "\" \n                   name=\"").concat(this.name, "\"\n                   type=\"").concat(this.type, "\" \n                   placeholder=\"").concat(this.placeholder, "\"\n                   pattern=\"").concat(this.pattern, "\"\n                   value=\"").concat(this.value, "\"\n                   form=\"").concat(this.form, "\" />\n\n            <label for=\"").concat(this.name, "\">\n                ").concat(this.name, "\n            </label>\n        ");
+    }
+  }], [{
+    key: "observedAttributes",
+    get: function get() {
+      return ['name', 'type', 'placeholder', 'form', 'disabled', 'pattern', 'required', 'value'];
+    }
+  }]);
+
+  return CustomInput;
+}(_BaseComponent2.default);
+
+exports.default = CustomInput;
+
+_defineProperty(CustomInput, "nodeName", 'custom-input');
+},{"$/components/1BaseComponent/BaseComponent":"components/1BaseComponent/BaseComponent.js"}],"components/CustomTitle/CustomTitle.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -925,114 +1251,6 @@ var CustomTitle = /*#__PURE__*/function (_BaseComponent) {
 exports.default = CustomTitle;
 
 _defineProperty(CustomTitle, "nodeName", 'custom-title');
-},{"$/components/1BaseComponent/BaseComponent":"components/1BaseComponent/BaseComponent.js"}],"components/CustomButton/CustomButton.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-var _BaseComponent2 = _interopRequireDefault(require("$/components/1BaseComponent/BaseComponent"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
-
-function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
-
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Date.prototype.toString.call(Reflect.construct(Date, [], function () {})); return true; } catch (e) { return false; } }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-var CustomButton = /*#__PURE__*/function (_BaseComponent) {
-  _inherits(CustomButton, _BaseComponent);
-
-  var _super = _createSuper(CustomButton);
-
-  function CustomButton() {
-    var _this;
-
-    _classCallCheck(this, CustomButton);
-
-    _this = _super.call(this);
-    _this.tag = null;
-    _this.colorClass = null;
-    _this.url = null;
-    _this.value = '';
-    return _this;
-  }
-
-  _createClass(CustomButton, [{
-    key: "connectedCallback",
-    value: function connectedCallback() {
-      this.innerHTML = this.render();
-      this.setUrl();
-    }
-  }, {
-    key: "attributeChangedCallback",
-    value: function attributeChangedCallback(attrName, oldVal, newVal) {
-      switch (attrName) {
-        case 'tag':
-          this.tag = newVal;
-          break;
-
-        case 'value':
-          this.value = newVal;
-          break;
-
-        case 'colorClass':
-          this.colorClass = newVal;
-          break;
-
-        case 'url':
-          this.url = newVal;
-          break;
-      }
-    }
-  }, {
-    key: "setUrl",
-    value: function setUrl() {
-      if (this.tag === 'a' && this.url !== null) {
-        this.$('a').setAttribute('href', this.url);
-      } else if (this.tag === 'a') {
-        throw new Error('set url for link');
-      }
-    }
-  }, {
-    key: "render",
-    value: function render() {
-      return "\n            <".concat(this.tag, " class=\"btn btn--").concat(this.colorClass, "\">\n                ").concat(this.value, "\n            </").concat(this.tag, ">\n        ");
-    }
-  }], [{
-    key: "observedAttributes",
-    get: function get() {
-      return ['tag', 'value', 'colorClass', 'url'];
-    }
-  }]);
-
-  return CustomButton;
-}(_BaseComponent2.default);
-
-exports.default = CustomButton;
-
-_defineProperty(CustomButton, "nodeName", 'custom-button');
 },{"$/components/1BaseComponent/BaseComponent":"components/1BaseComponent/BaseComponent.js"}],"components/Forms/SignInForm.js":[function(require,module,exports) {
 "use strict";
 
@@ -1075,20 +1293,29 @@ var SignInForm = /*#__PURE__*/function (_BaseComponent) {
   var _super = _createSuper(SignInForm);
 
   function SignInForm() {
+    var _this;
+
     _classCallCheck(this, SignInForm);
 
-    return _super.call(this);
+    _this = _super.call(this);
+    _this.name = 'sigInForm';
+    _this.innerHTML = _this.render();
+
+    _this.$('form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      console.log(e.target.elements.username.value);
+    });
+
+    return _this;
   }
 
   _createClass(SignInForm, [{
     key: "connectedCallback",
-    value: function connectedCallback() {
-      this.innerHTML = this.render();
-    }
+    value: function connectedCallback() {}
   }, {
     key: "render",
     value: function render() {
-      return "\n            <custom-input name=\"username\" \n                          type=\"text\"\n                          placeholder=\"Username\"\n                          required>\n            </custom-input>\n        ";
+      return "\n            <form id=\"".concat(this.name, "\">\n                <fieldset>\n                    <legend> Sign in </legend>\n\n                    <custom-input name=\"username\" \n                            type=\"text\"\n                            placeholder=\"Username\"\n                            form=\"").concat(this.name, "\"\n                            required>\n                    </custom-input>\n\n                    <custom-input name=\"password\" \n                            type=\"password\"\n                            placeholder=\"Password\"\n                            form=\"").concat(this.name, "\"\n                            required>\n                    </custom-input>\n                    \n                    <custom-button tag=\"button\" \n                            form=\"").concat(this.name, "\"\n                            type=\"submit\"\n                            value=\"SignIn\" \n                            colorClass=\"first\">\n                    </custom-button>\n                </fieldset>\n            </form>\n        ");
     }
   }]);
 
@@ -1098,7 +1325,7 @@ var SignInForm = /*#__PURE__*/function (_BaseComponent) {
 exports.default = SignInForm;
 
 _defineProperty(SignInForm, "nodeName", 'sign-in-form');
-},{"$/components/1BaseComponent/BaseComponent":"components/1BaseComponent/BaseComponent.js"}],"components/CustomInput/CustomInput.js":[function(require,module,exports) {
+},{"$/components/1BaseComponent/BaseComponent":"components/1BaseComponent/BaseComponent.js"}],"components/Forms/SignUpForm.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1134,133 +1361,114 @@ function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.g
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-var CustomInput = /*#__PURE__*/function (_BaseComponent) {
-  _inherits(CustomInput, _BaseComponent);
+var SignUpForm = /*#__PURE__*/function (_BaseComponent) {
+  _inherits(SignUpForm, _BaseComponent);
 
-  var _super = _createSuper(CustomInput);
+  var _super = _createSuper(SignUpForm);
 
-  function CustomInput() {
+  function SignUpForm() {
     var _this;
 
-    _classCallCheck(this, CustomInput);
+    _classCallCheck(this, SignUpForm);
 
     _this = _super.call(this);
-    _this.name = null;
-    _this.type = null;
-    _this.placeholder = null;
-    _this.disabled = false;
-    _this.pattern = new RegExp(/^.$/);
-    _this.required = false;
-    _this.value = '';
+    _this.name = 'sigUpForm';
     return _this;
   }
 
-  _createClass(CustomInput, [{
+  _createClass(SignUpForm, [{
     key: "connectedCallback",
     value: function connectedCallback() {
       this.innerHTML = this.render();
-      this.setBooleanAttributes();
-    }
-  }, {
-    key: "attributeChangedCallback",
-    value: function attributeChangedCallback(attrName, oldVal, newVal) {
-      switch (attrName) {}
-    }
-  }, {
-    key: "setBooleanAttributes",
-    value: function setBooleanAttributes() {
-      var inputEl = this.$('input');
-
-      if (this.disabled) {
-        inputEl.disabled = true;
-      }
-
-      if (this.required) {
-        inputEl.required = true;
-      }
     }
   }, {
     key: "render",
     value: function render() {
-      return "\n            <input id=\"".concat(this.name, "\" \n                   type=\"").concat(this.type, "\" \n                   placeholder=\"").concat(this.placeholder, "\"\n                   pattern=\"").concat(this.pattern, "\"\n                   value=").concat(this.value, " />\n\n            <label for=\"").concat(this.name, "\">\n                ").concat(this.name, "\n            </label>\n        ");
-    }
-  }], [{
-    key: "observedAttributes",
-    get: function get() {
-      return ['name', 'type', 'placeholder', 'disabled', 'pattern', 'required', 'value'];
+      return "\n            <form id=\"".concat(this.name, "\">\n                <fieldset>\n                    <legend> Sign up </legend>\n\n                    <custom-input name=\"Username\" \n                            type=\"text\"\n                            placeholder=\"Username\"\n                            form=\"").concat(this.name, "\"\n                            required>\n                    </custom-input>\n\n                    <custom-input name=\"Email\" \n                            type=\"text\"\n                            placeholder=\"Email\"\n                            form=\"").concat(this.name, "\"\n                            required>\n                    </custom-input>\n\n                    <custom-input name=\"Password\" \n                            type=\"password\"\n                            placeholder=\"Password\"\n                            form=\"").concat(this.name, "\"\n                            required>\n                    </custom-input>\n\n                    <custom-input name=\"Repeat password\" \n                            type=\"password\"\n                            placeholder=\"Repeat password\"\n                            form=\"").concat(this.name, "\"\n                            required>\n                    </custom-input>\n                    \n                    <custom-button tag=\"button\" \n                            form=\"").concat(this.name, "\"\n                            value=\"SignUp\" \n                            color-class=\"second\">\n                    </custom-button>\n                </fieldset>\n            </form>\n        ");
     }
   }]);
 
-  return CustomInput;
+  return SignUpForm;
 }(_BaseComponent2.default);
 
-exports.default = CustomInput;
+exports.default = SignUpForm;
 
-_defineProperty(CustomInput, "nodeName", 'custom-input');
-},{"$/components/1BaseComponent/BaseComponent":"components/1BaseComponent/BaseComponent.js"}],"componentsAndPages.js":[function(require,module,exports) {
+_defineProperty(SignUpForm, "nodeName", 'sign-up-form');
+},{"$/components/1BaseComponent/BaseComponent":"components/1BaseComponent/BaseComponent.js"}],"components/index.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = exports.componentsAndPages = void 0;
+exports.default = void 0;
 
-var _MainPage = _interopRequireDefault(require("$/pages/MainPage"));
+var _CustomButton = _interopRequireDefault(require("./CustomButton/CustomButton"));
 
-var _NotFoundPage = _interopRequireDefault(require("$/pages/NotFoundPage"));
+var _CustomInput = _interopRequireDefault(require("./CustomInput/CustomInput"));
 
-var _CustomTitle = _interopRequireDefault(require("$/components/CustomTitle/CustomTitle"));
+var _CustomTitle = _interopRequireDefault(require("./CustomTitle/CustomTitle"));
 
-var _CustomButton = _interopRequireDefault(require("$/components/CustomButton/CustomButton"));
+var _SignInForm = _interopRequireDefault(require("./Forms/SignInForm"));
 
-var _SignInPage = _interopRequireDefault(require("$/pages/SignInPage"));
-
-var _SignInForm = _interopRequireDefault(require("$/components/Forms/SignInForm"));
-
-var _CustomInput = _interopRequireDefault(require("$/components/CustomInput/CustomInput"));
+var _SignUpForm = _interopRequireDefault(require("./Forms/SignUpForm"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var componentsAndPages = [_MainPage.default, _NotFoundPage.default, _CustomTitle.default, _CustomButton.default, _SignInPage.default, _SignInForm.default, _CustomInput.default];
-exports.componentsAndPages = componentsAndPages;
-var _default = componentsAndPages;
+var listOfComponents = Object.freeze([_CustomButton.default, _CustomInput.default, _CustomTitle.default, _SignInForm.default, _SignUpForm.default]);
+var _default = listOfComponents;
 exports.default = _default;
-},{"$/pages/MainPage":"pages/MainPage.js","$/pages/NotFoundPage":"pages/NotFoundPage.js","$/components/CustomTitle/CustomTitle":"components/CustomTitle/CustomTitle.js","$/components/CustomButton/CustomButton":"components/CustomButton/CustomButton.js","$/pages/SignInPage":"pages/SignInPage.js","$/components/Forms/SignInForm":"components/Forms/SignInForm.js","$/components/CustomInput/CustomInput":"components/CustomInput/CustomInput.js"}],"main.js":[function(require,module,exports) {
+},{"./CustomButton/CustomButton":"components/CustomButton/CustomButton.js","./CustomInput/CustomInput":"components/CustomInput/CustomInput.js","./CustomTitle/CustomTitle":"components/CustomTitle/CustomTitle.js","./Forms/SignInForm":"components/Forms/SignInForm.js","./Forms/SignUpForm":"components/Forms/SignUpForm.js"}],"pages/index.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _MainPage = _interopRequireDefault(require("./MainPage"));
+
+var _NotFoundPage = _interopRequireDefault(require("./NotFoundPage"));
+
+var _SignInPage = _interopRequireDefault(require("./SignInPage"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var listOfPages = Object.freeze([_MainPage.default, _NotFoundPage.default, _SignInPage.default]);
+var _default = listOfPages;
+exports.default = _default;
+},{"./MainPage":"pages/MainPage.js","./NotFoundPage":"pages/NotFoundPage.js","./SignInPage":"pages/SignInPage.js"}],"main.js":[function(require,module,exports) {
 "use strict";
 
 require("$/scss/style.scss");
 
 var _router = require("$/router");
 
-var _componentsAndPages = _interopRequireDefault(require("$/componentsAndPages"));
+var _components = _interopRequireDefault(require("$/components"));
+
+var _pages = _interopRequireDefault(require("$/pages"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function _createForOfIteratorHelper(o, allowArrayLike) { var it; if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = o[Symbol.iterator](); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 
 function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
 
 function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
 //globals
 window.router = _router.router; // components and pages
 
-console.log("componentsAndPages", _componentsAndPages.default);
-
-var _iterator = _createForOfIteratorHelper(_componentsAndPages.default),
-    _step;
-
-try {
-  for (_iterator.s(); !(_step = _iterator.n()).done;) {
-    var elem = _step.value;
-    customElements.define(elem.is, elem);
-  }
-} catch (err) {
-  _iterator.e(err);
-} finally {
-  _iterator.f();
+for (var _i = 0, _arr = [].concat(_toConsumableArray(_components.default), _toConsumableArray(_pages.default)); _i < _arr.length; _i++) {
+  var elem = _arr[_i];
+  customElements.define(elem.is, elem);
 }
-},{"$/scss/style.scss":"scss/style.scss","$/router":"router/index.js","$/componentsAndPages":"componentsAndPages.js"}],"../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"$/scss/style.scss":"scss/style.scss","$/router":"router/index.js","$/components":"components/index.js","$/pages":"pages/index.js"}],"../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -1288,7 +1496,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "57319" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "54530" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
