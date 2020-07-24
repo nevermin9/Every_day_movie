@@ -27,10 +27,8 @@ class User {
         });
     }
 
-    static checkPassword(email, password) {
-        return this.getUserByEmail(email).then((user) => {
-            return bcrypt.compare(password, user.password_hash);
-        });
+    static checkPassword(password, passwordHash) {
+        return bcrypt.compare(password, passwordHash);
     }
 
     static getUserByEmail(email) {
