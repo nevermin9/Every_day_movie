@@ -17,6 +17,13 @@ export default class BaseComponents extends HTMLElement {
         return this.querySelectorAll(selector);
     }
 
+    connectedCallback() {
+        if (!this.rendered) {
+            this.innerHTML = this.render();
+            this.rendered = true;
+        }
+    }
+
     // fireEvent(eventKey) {
     //     if (this.eventList.hasOwnProperty(eventKey)) {
     //         this.dispatchEvent(this.eventList[eventKey]);
@@ -37,4 +44,7 @@ export default class BaseComponents extends HTMLElement {
 
     //     this.eventList[eventKey] = new CustomEvent(name, {bubbles, detail});
     // }
+    render() {
+        return ``;
+    }
 }

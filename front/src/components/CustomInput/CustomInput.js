@@ -1,4 +1,5 @@
 import BaseComponent from '$/components/1BaseComponent/BaseComponent';
+import { isEmpty } from 'util';
 
 export default class CustomInput extends BaseComponent {
     static nodeName = 'custom-input';
@@ -13,14 +14,15 @@ export default class CustomInput extends BaseComponent {
         this.required = false;
         this.value = '';
         this.form = null;
+        this.label = '';
     }
 
     static get observedAttributes() {
-        return ['name', 'type', 'placeholder', 'form', 'disabled', 'pattern', 'required', 'value']
+        return ['name', 'type', 'placeholder', 'form', 'disabled', 'pattern', 'required', 'value', 'error-text', 'label']
     }
 
     connectedCallback() {
-        this.innerHTML = this.render();
+        super.connectedCallback();
         this.setBooleanAttributes();
     }
 
@@ -44,8 +46,24 @@ export default class CustomInput extends BaseComponent {
             case 'form':
                 this.form = newVal;
                 break;
+            case 'error-text':
+                this.errorText = newVal;
+                break;
+            case 'label':
+                this.label = newVal;
+                break;
         }
+    }
 
+    set errorText(newVal) {
+        const errorContainer = this.$('.js-error-text');
+        errorContainer.innerHTML = '';
+        errorContainer.append(newVal);
+    }
+
+    get errorText() {
+        const errorContainer = this.$('js-error-text');
+        return errorContainer.innerHTML;
     }
 
     setBooleanAttributes() {
@@ -64,15 +82,18 @@ export default class CustomInput extends BaseComponent {
     render() {
         return `
             <input id="${this.name}" 
+                   class="custom-input__input" 
                    name="${this.name}"
                    type="${this.type}" 
                    placeholder="${this.placeholder}"
                    pattern="${this.pattern}"
                    value="${this.value}"
                    form="${this.form}" />
+            
+            <span class="custom-input__error-text js-error-text"></span>
 
-            <label for="${this.name}">
-                ${this.name}
+            <label class="custom-input__label" for="${this.name}">
+                ${this.label}
             </label>
         `
     }

@@ -4,6 +4,14 @@ export function clearSlashes(str) {
     }
 }
 
+export function isEmpty(input) {
+    if (input === '' || input === undefined || input === null) {
+        return true;
+    }
+
+    return false;
+}
+
 export default {
     clearSlashes
 }

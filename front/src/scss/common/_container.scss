@@ -1,0 +1,16 @@
+.container {
+    width: 100%;
+    margin: 0 auto;
+
+    @include screen-min {
+        max-width: 540px;
+    }
+
+    @include screen-sm {
+        max-width: 720px;
+    }
+
+    @include screen-lg {
+        max-width: 1000px;
+    }
+}

@@ -7,8 +7,7 @@ export default class Route {
         this.query = null;
         this.params = null;
 
-        this.createParamsObject();
-        this.createNode();
+        this.createParamsObject().createNode();
     }
 
     createParamsObject() {
@@ -25,5 +24,6 @@ export default class Route {
 
     createNode() {
         this.node = document.createElement(this.component.is);
+        return this;
     }
 }

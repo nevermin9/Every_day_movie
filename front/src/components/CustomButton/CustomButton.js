@@ -14,10 +14,7 @@ export default class CustomButton extends BaseComponent {
     }
 
     connectedCallback() {
-        if (!this.rendered) {
-            this.innerHTML = this.render();
-            this.rendered = false;
-        }
+        super.connectedCallback();
 
         if (this.tag === 'a' && this.url !== null) {
             this.setUrl();

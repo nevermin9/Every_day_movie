@@ -1,0 +1,50 @@
+custom-input {
+    display: flex;
+    flex-flow: column-reverse;
+    width: 100%;
+    padding: 8px 0;
+}
+
+.custom-input__input {
+    background: none;
+    border: none;
+    border-bottom-color: $white;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    padding: 6px;
+    transition: all .3s;
+    touch-action: manipulation;
+    cursor: text;
+
+    &:focus {
+        outline: none;
+
+        &::-webkit-input-placeholder {
+            opacity: 1;
+        }
+    }
+}
+
+.custom-input__label {
+    transition: all .3s;
+    touch-action: manipulation;
+}
+
+.custom-input__input:placeholder-shown ~ .custom-input__label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transform-origin: left bottom;
+    transform: translate(0, 30px) scaleY(1.2);
+}
+
+.custom-input__input:not(:placeholder-shown) ~ .custom-input__label,
+.custom-input__input:focus ~ .custom-input__label {
+    transform: translate(0, 0) scale(1);
+    cursor: pointer;
+}
+
+::-webkit-input-placeholder {
+  opacity: 0;
+  transition: inherit;
+}

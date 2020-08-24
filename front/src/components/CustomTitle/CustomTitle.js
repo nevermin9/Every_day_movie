@@ -26,12 +26,11 @@ export default class CustomTitle extends BaseComponent {
                 this.value = newVal;
                 break;
         }
-
     }
 
     render() {
         return `
-            <h${this.lvl}>
+            <h${this.lvl} class="custom-title custom-title--${this.lvl}">
                 ${this.value}
             </h${this.lvl}>
         `
