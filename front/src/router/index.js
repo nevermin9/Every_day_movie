@@ -1,7 +1,7 @@
 import Router from './Router';
-import MainPage from '$/pages/MainPage';
-import NotFoundPage from '$/pages/NotFoundPage';
-import SignInPage from '$/pages/SignInPage'
+import MainPage from '@/pages/MainPage';
+import NotFoundPage from '@/pages/NotFoundPage';
+import SignInPage from '@/pages/SignInPage'
 
 const routes = [
     {

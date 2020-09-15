@@ -1,4 +1,5 @@
-import BaseComponent from '$/components/1BaseComponent/BaseComponent';
+import BaseComponent from '@/components/1BaseComponent/BaseComponent';
+import { router } from '../../router';
 
 export default class CustomButton extends BaseComponent {
     static nodeName = 'custom-button';

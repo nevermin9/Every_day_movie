@@ -1,4 +1,4 @@
-import BaseComponent from '$/components/1BaseComponent/BaseComponent';
+import BaseComponent from '@/components/1BaseComponent/BaseComponent';
 import { isEmpty } from 'utils';
 import axios from 'axios';
 
@@ -79,11 +79,9 @@ export default class SignUpForm extends BaseComponent {
         return `
             <form id="${this.name}" class="sign-up-form__form" autocomplete="off" novalidate>
                 <section class="sign-up-form__container">
-                    <h3 class="sign-up-form__headline">
-                        Sign up
-                    </h3>
+                    <custom-title class="sign-up-form__headline" lvl="2" value="Sign up"></custom-title>
 
-                    <custom-input class="sing-up-form__input"
+                    <custom-input class="sign-up-form__input"
                             name="username" 
                             type="text"
                             placeholder="James Bond"
@@ -92,7 +90,7 @@ export default class SignUpForm extends BaseComponent {
                             required>
                     </custom-input>
 
-                    <custom-input class="sing-up-form__input"
+                    <custom-input class="sign-up-form__input"
                             name="email" 
                             type="text"
                             placeholder="007@mi6.com"
@@ -101,7 +99,7 @@ export default class SignUpForm extends BaseComponent {
                             required>
                     </custom-input>
 
-                    <custom-input class="sing-up-form__input"
+                    <custom-input class="sign-up-form__input"
                             name="password" 
                             type="password"
                             placeholder="Super secret password"
@@ -110,7 +108,7 @@ export default class SignUpForm extends BaseComponent {
                             required>
                     </custom-input>
 
-                    <custom-input class="sing-up-form__input"
+                    <custom-input class="sign-up-form__input  sign-up-form__input--m-bott"
                             name="repeat_password" 
                             type="password"
                             placeholder="Super secret password again"
@@ -119,7 +117,7 @@ export default class SignUpForm extends BaseComponent {
                             required>
                     </custom-input>
                     
-                    <custom-button class="sing-up-form__btn"
+                    <custom-button class="sign-up-form__btn"
                             tag="button" 
                             form="${this.name}"
                             value="SignUp" 

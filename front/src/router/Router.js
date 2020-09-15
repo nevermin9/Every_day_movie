@@ -9,6 +9,8 @@ export default class Router {
         this.app = document.getElementById(appSelector);
     }
 
+    // todo: getter/setter for current route
+
     go(n) {
         window.history.go(n)
         return this;
@@ -20,6 +22,7 @@ export default class Router {
 
         if (index < 0) {
             this._show404Page();
+            return;
         }
 
         const path = this.routes[index].path;
@@ -35,7 +38,6 @@ export default class Router {
         this.current = { ...this.routes[index] };
         return this;
     }
-
 
     listen() {
         window.addEventListener('popstate', () => {

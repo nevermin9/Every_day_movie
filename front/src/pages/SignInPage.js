@@ -1,4 +1,4 @@
-import BaseComponent from '$/components/1BaseComponent/BaseComponent';
+import BaseComponent from '@/components/1BaseComponent/BaseComponent';
 
 export default class SignInPage extends BaseComponent {
     static nodeName = 'sign-in-page';
@@ -13,9 +13,7 @@ export default class SignInPage extends BaseComponent {
 
     render() {
         return `
-            <main class="sign-in-page">
-                singin page
-
+            <main class="sign-in-page container">
                 <sign-in-form></sign-in-form>
             </main>
         `

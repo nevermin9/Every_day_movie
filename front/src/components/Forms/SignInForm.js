@@ -1,4 +1,4 @@
-import BaseComponent from '$/components/1BaseComponent/BaseComponent';
+import BaseComponent from '@/components/1BaseComponent/BaseComponent';
 
 export default class SignInForm extends BaseComponent {
     static nodeName = 'sign-in-form'
@@ -21,20 +21,24 @@ export default class SignInForm extends BaseComponent {
 
     render() {
         return `
-            <form id="${this.name}">
-                <fieldset>
-                    <legend> Sign in </legend>
+            <form id="${this.name}" novalidate>
+                <section>
+                    <custom-title class="sign-in-form__headline" lvl="2" value="Sign in"></custom-title>
 
-                    <custom-input name="username" 
+                    <custom-input class="sign-in-form__input"
+                            name="username" 
                             type="text"
-                            placeholder="Username"
+                            placeholder="James Bond"
+                            label="Username"
                             form="${this.name}"
                             required>
                     </custom-input>
 
-                    <custom-input name="password" 
+                    <custom-input class="sign-in-form__input"
+                            name="password" 
                             type="password"
                             placeholder="Password"
+                            label="Password"
                             form="${this.name}"
                             required>
                     </custom-input>
@@ -43,9 +47,15 @@ export default class SignInForm extends BaseComponent {
                             form="${this.name}"
                             type="submit"
                             value="SignIn" 
-                            colorClass="first">
+                            color-class="second">
                     </custom-button>
-                </fieldset>
+
+                    <custom-button tag="a" 
+                            value="back" 
+                            url="/"
+                            color-class="first">
+                    </custom-button>
+                </section>
             </form>
         `
     }

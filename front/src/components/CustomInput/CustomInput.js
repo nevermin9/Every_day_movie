@@ -1,4 +1,4 @@
-import BaseComponent from '$/components/1BaseComponent/BaseComponent';
+import BaseComponent from '@/components/1BaseComponent/BaseComponent';
 import { isEmpty } from 'util';
 
 export default class CustomInput extends BaseComponent {
@@ -81,6 +81,8 @@ export default class CustomInput extends BaseComponent {
 
     render() {
         return `
+            <span class="custom-input__error-text js-error-text"></span>
+
             <input id="${this.name}" 
                    class="custom-input__input" 
                    name="${this.name}"
@@ -89,8 +91,6 @@ export default class CustomInput extends BaseComponent {
                    pattern="${this.pattern}"
                    value="${this.value}"
                    form="${this.form}" />
-            
-            <span class="custom-input__error-text js-error-text"></span>
 
             <label class="custom-input__label" for="${this.name}">
                 ${this.label}

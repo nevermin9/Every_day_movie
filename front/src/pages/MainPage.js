@@ -1,11 +1,14 @@
-import BaseComponent from '$/components/1BaseComponent/BaseComponent';
+import BaseComponent from '@/components/1BaseComponent/BaseComponent';
 
 //assets
-import video from '$/assets/videos/main_page_bg.mp4'
+import video from '@/assets/videos/main_page_bg.mp4'
 
 let animId;
 
 function returnAnimateFunction(destination) {
+    // window.scrollTo with options doesnt work correctly in some browsers
+    // so I decided to use custom animation
+
     let startAnimTime = null;
     const DURATION = 1200;
 
@@ -16,7 +19,6 @@ function returnAnimateFunction(destination) {
         const scrollBy = (destination / DURATION) * currentTime;
 
         window.scrollBy(0, scrollBy);
-        console.log('1111')
 
         if ((destination > 0 && document.documentElement.scrollTop === destination) 
             || (destination < 0 && document.documentElement.scrollTop === 0)) {
@@ -43,7 +45,6 @@ export default class MainPage extends BaseComponent {
             this.destination = this.clientHeight / 2;
             this.addRemoveBodyClass();
         }
-
 
         this.$('[data-anim-btn]').addEventListener('click', () => {
             animId = requestAnimationFrame(returnAnimateFunction(this.destination))

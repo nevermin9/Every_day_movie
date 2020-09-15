@@ -1,4 +1,4 @@
-import BaseComponent from '$/components/1BaseComponent/BaseComponent';
+import BaseComponent from '@/components/1BaseComponent/BaseComponent';
 
 export default class CustomTitle extends BaseComponent {
     static nodeName = 'custom-title'
