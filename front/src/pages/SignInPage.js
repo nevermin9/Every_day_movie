@@ -8,13 +8,19 @@ export default class SignInPage extends BaseComponent {
     }
 
     connectedCallback() {
-        this.innerHTML = this.render();
+        super.connectedCallback();
     }
 
     render() {
         return `
             <main class="sign-in-page container">
                 <sign-in-form></sign-in-form>
+
+                <custom-button tag="a" 
+                        value="back" 
+                        url="/"
+                        color-class="first">
+                </custom-button>
             </main>
         `
     }

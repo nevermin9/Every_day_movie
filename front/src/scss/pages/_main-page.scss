@@ -38,35 +38,6 @@
     @include screen-sm {
         margin-bottom: 16px;
     }
-
-    h1 {
-        position: relative;
-    }
-
-    h1:before {
-        content: '';
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 8px;
-        width: 0%;
-        height: 2px;
-        background-color: $yellow;
-        animation-name: underline;
-        animation-duration: .9s;
-        animation-fill-mode: forwards;
-        animation-timing-function: ease;
-    }
-}
-
-@keyframes underline {
-    0% {
-        width: 0%;
-    }
-
-    100% {
-        width: 100%;
-    }
 }
 
 .main-page__text {

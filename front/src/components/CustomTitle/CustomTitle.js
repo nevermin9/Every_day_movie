@@ -7,14 +7,15 @@ export default class CustomTitle extends BaseComponent {
         super();
         this.lvl = '';
         this.value = '';
+        this.decore = false;
     }
 
     connectedCallback() {
-        this.innerHTML = this.render();
+        super.connectedCallback();
     }
 
     static get observedAttributes() {
-        return ['lvl', 'value'];
+        return ['lvl', 'value', 'decore'];
     }
 
     attributeChangedCallback(attrName, oldVal, newVal) {
@@ -25,15 +26,17 @@ export default class CustomTitle extends BaseComponent {
             case 'value':
                 this.value = newVal;
                 break;
+            case 'decore':
+                this.decore = true;
+                break;
         }
     }
 
     render() {
         return `
-            <h${this.lvl} class="custom-title custom-title--${this.lvl}">
+            <h${this.lvl} class="custom-title custom-title--${this.lvl} ${this.decore ? 'custom-title--decore' : ''}">
                 ${this.value}
             </h${this.lvl}>
         `
     }
-
 }

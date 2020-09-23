@@ -1,4 +1,3 @@
-const moment = require('moment');
 const validation = require('../helpers/validation');
 const statuses = require('../helpers/statuses');
 const User = require('../models/User');

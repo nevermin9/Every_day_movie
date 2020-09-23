@@ -75,7 +75,7 @@ export default class MainPage extends BaseComponent {
                 </video>
 
                 <section class="main-page__content container">
-                    <custom-title class="main-page__title" lvl="1" value="EveryDayMovie"></custom-title>
+                    <custom-title class="main-page__title" lvl="1" value="EveryDayMovie" decore></custom-title>
 
                     <p class="main-page__text">
                         Get info about random movie every day!

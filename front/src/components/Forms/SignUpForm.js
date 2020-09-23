@@ -1,6 +1,7 @@
 import BaseComponent from '@/components/1BaseComponent/BaseComponent';
 import { isEmpty } from 'utils';
-import axios from 'axios';
+import { signUpUser } from 'api';
+console.log("signUpUser", signUpUser)
 
 export default class SignUpForm extends BaseComponent {
     static nodeName = 'sign-up-form'
@@ -33,20 +34,14 @@ export default class SignUpForm extends BaseComponent {
         const emailInput = form.elements.email;
         const passwordInput = form.elements.password;
 
-        axios({
-            method: 'POST',
-            baseURL: 'http://localhost:3000',
-            url: '/api/v1/auth/signup',
-            headers: { 'Content-Type': 'application/json' },
-            data: {
-                name: usernameInput.value,
-                email: emailInput.value,
-                password: passwordInput.value,
-                timeout: 1000,
-            }
-        }).then((response) => {
-            console.log(response)
-        }).catch(err => console.error(err))
+
+        signUpUser({ data: {
+            name: usernameInput.value,
+            email: emailInput.value,
+            password: passwordInput.value,
+        }}).then(response => {
+            console.log('res', response);
+        }).catch(err => console.log('err', err))
     }
 
     isValidData(form) {
@@ -120,7 +115,7 @@ export default class SignUpForm extends BaseComponent {
                     <custom-button class="sign-up-form__btn"
                             tag="button" 
                             form="${this.name}"
-                            value="SignUp" 
+                            value="Sign Up" 
                             color-class="second">
                             type="submit"
                     </custom-button>

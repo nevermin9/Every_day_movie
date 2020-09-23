@@ -17,13 +17,14 @@ export default class SignInForm extends BaseComponent {
     }
 
     connectedCallback() {
+        super.connectedCallback();
     }
 
     render() {
         return `
-            <form id="${this.name}" novalidate>
-                <section>
-                    <custom-title class="sign-in-form__headline" lvl="2" value="Sign in"></custom-title>
+            <form id="${this.name}" class="sign-in-form__form" novalidate autocomplete="off">
+                <section class="sign-in-form__container">
+                    <custom-title class="sign-in-form__headline" lvl="2" value="Sign in" decore></custom-title>
 
                     <custom-input class="sign-in-form__input"
                             name="username" 
@@ -34,7 +35,7 @@ export default class SignInForm extends BaseComponent {
                             required>
                     </custom-input>
 
-                    <custom-input class="sign-in-form__input"
+                    <custom-input class="sign-in-form__input  sign-in-form__input--m-bott"
                             name="password" 
                             type="password"
                             placeholder="Password"
@@ -46,14 +47,8 @@ export default class SignInForm extends BaseComponent {
                     <custom-button tag="button" 
                             form="${this.name}"
                             type="submit"
-                            value="SignIn" 
+                            value="Sign In" 
                             color-class="second">
-                    </custom-button>
-
-                    <custom-button tag="a" 
-                            value="back" 
-                            url="/"
-                            color-class="first">
                     </custom-button>
                 </section>
             </form>

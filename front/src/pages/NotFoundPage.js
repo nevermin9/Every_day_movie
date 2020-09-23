@@ -8,7 +8,7 @@ export default class NotFoundPage extends BaseComponent {
     }
 
     connectedCallback() {
-        this.innerHTML = this.render();
+        super.connectedCallback();
     }
 
     render() {

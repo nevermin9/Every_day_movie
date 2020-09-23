@@ -1,0 +1,33 @@
+sign-in-form {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 8px;
+    max-width: 450px;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+
+    @include screen-sm {
+        margin-bottom: 16px;
+    }
+}
+
+.sign-in-form__form {
+    width: 100%;
+}
+
+.sign-in-form__container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 8px;
+}
+
+.sign-in-form__input {
+    margin: 2px 0;
+}
+
+.sign-in-form__input.sign-in-form__input--m-bott {
+    margin-bottom: 16px;
+}

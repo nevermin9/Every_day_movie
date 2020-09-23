@@ -49,6 +49,7 @@ module.exports = {
         alias: {
             '@': path.resolve(__dirname, './src'),
             'utils': path.resolve(__dirname, './src/utils/index.js'),
+            'api': path.resolve(__dirname, './src/api/index.js'),
         }
     },
     devServer: {
