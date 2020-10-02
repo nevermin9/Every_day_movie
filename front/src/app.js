@@ -1,9 +1,9 @@
 //styles
 import '@/scss/style.scss';
 // Router
-import { router } from '@/router';
+// import { router } from '@/router';
 //globals
-window.router = router;
+// window.router = router;
 
 // components and pages
 import listOfComponents from '@/components';

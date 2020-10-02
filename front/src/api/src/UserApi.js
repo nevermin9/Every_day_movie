@@ -1,4 +1,4 @@
-import Client from './Client';
+import { Client } from './Client';
 
 export function signUpUser({ data }) {
     return Client.fetchData('/api/v1/auth/signup', { 

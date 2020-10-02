@@ -1,7 +1,6 @@
 import BaseComponent from '@/components/1BaseComponent/BaseComponent';
 import { isEmpty } from 'utils';
 import { signUpUser } from 'api';
-console.log("signUpUser", signUpUser)
 
 export default class SignUpForm extends BaseComponent {
     static nodeName = 'sign-up-form'
@@ -40,8 +39,13 @@ export default class SignUpForm extends BaseComponent {
             email: emailInput.value,
             password: passwordInput.value,
         }}).then(response => {
-            console.log('res', response);
-        }).catch(err => console.log('err', err))
+            // clear, save token, and redirect
+            if (response)
+            this.$router.navigateTo({ name: 'SignInForm' })
+        }).catch(err => {
+            // clear and 'Smth went wrong!'
+            console.log('err', err)
+        })
     }
 
     isValidData(form) {

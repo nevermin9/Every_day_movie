@@ -1,2 +1,2 @@
-import { Client } from './src/Client';
-import { signUpUser } from './src/UserApi';
+export { Client } from './src/Client';
+export { signUpUser } from './src/UserApi';

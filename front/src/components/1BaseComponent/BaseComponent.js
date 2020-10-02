@@ -1,7 +1,10 @@
+import { router } from '@/router';
+
 export default class BaseComponents extends HTMLElement {
     constructor() {
         super();
         this.rendered = false;
+        this.$router = router;
         // this.eventList = {};
     }
 
