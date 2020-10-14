@@ -8,8 +8,4 @@ const server = http.createServer((req, res) => {
     router(req, res, finalhandler(req, res));
 });
 
-// server.on('request', (req, res) => {
-//     console.log('LISTENER OF EVENT');
-// });
-
 server.listen(process.env.PORT);

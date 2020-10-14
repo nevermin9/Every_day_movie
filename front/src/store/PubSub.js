@@ -5,7 +5,7 @@ export default class PubSub {
 
     subscribe(event, cb) {
         if (!this.events.hasOwnProperty(event)) {
-            this.events = [];
+            this.events[event] = [];
         }
 
         return this.events[event].push(cb);

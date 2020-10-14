@@ -1,10 +1,11 @@
-import { router } from '@/router';
+import store from '@/store';
 
-export default class BaseComponents extends HTMLElement {
+export default class BaseComponent extends HTMLElement {
     constructor() {
         super();
         this.rendered = false;
-        this.$router = router;
+        this.$store = store;
+        // this.$router = router;
         // this.eventList = {};
     }
 

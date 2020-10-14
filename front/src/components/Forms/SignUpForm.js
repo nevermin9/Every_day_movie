@@ -18,6 +18,7 @@ export default class SignUpForm extends BaseComponent {
         this.$(`#${this.name}`).addEventListener('submit', (e) => {
             this.collectAndSendData(e);
         });
+        console.log(this.$store);
     }
 
     collectAndSendData(event) {
@@ -33,18 +34,10 @@ export default class SignUpForm extends BaseComponent {
         const emailInput = form.elements.email;
         const passwordInput = form.elements.password;
 
-
-        signUpUser({ data: {
+        this.$store.dispatch('signUpUser', {
             name: usernameInput.value,
             email: emailInput.value,
             password: passwordInput.value,
-        }}).then(response => {
-            // clear, save token, and redirect
-            if (response)
-            this.$router.navigateTo({ name: 'SignInForm' })
-        }).catch(err => {
-            // clear and 'Smth went wrong!'
-            console.log('err', err)
         })
     }
 

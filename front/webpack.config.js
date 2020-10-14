@@ -46,7 +46,7 @@ module.exports = {
             template: './src/index.html',
         }),
         new CleanWebpackPlugin(),
-        new webpack.EnvironmentPlugin(['API_BASE_URL'])
+        new webpack.EnvironmentPlugin(['API_BASE_URL', 'SECRET_KEY', 'STORAGE_KEY'])
     ],
     resolve: {
         alias: {

@@ -5,7 +5,6 @@ const jwtHandlers = require('../helpers/jwtHandlers');
 
 module.exports = {
     createUser(req, res) {
-        console.log("createUser -> req", req)
         const { email, password, name } = req.body;
         
         if ([email, password, name].some(validation.isEmpty)) {
