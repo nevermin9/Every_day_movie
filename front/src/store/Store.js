@@ -18,21 +18,17 @@ export default class Store {
     }
 
     _init(state) {
+        console.log("_init -> this.storeKeeper.getStateFromStorage()", this.storeKeeper.getStateFromStorage())
         this._writeState(state, this.storeKeeper.getStateFromStorage());
 
         this.storeKeeper.encryptStore(this.state);
 
-        this.events.subscribe('stateChange', this.storeKeeper.encryptStore);
+        this.events.subscribe('stateChange', this.storeKeeper.encryptStore.bind(this.storeKeeper));
 
-        window.addEventListener('load', this.storeKeeper.saveStateToStorage);
-
-        window.addEventListener('beforeunload', this.storeKeeper.getStateFromStorage);
+        window.addEventListener('load', this.storeKeeper.getStateFromStorage.bind(this.storeKeeper));
     }
 
     dispatch(actKey, payload) {
-        console.log("dispatch -> actKey", actKey)
-
-        console.log("dispatch -> typeof this.actions[actKey]", typeof this.actions[actKey])
         if (typeof this.actions[actKey] !== 'function') {
             console.error(`Action ${actKey} doesnt exist`);
             return false;

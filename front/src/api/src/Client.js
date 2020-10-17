@@ -1,6 +1,5 @@
 import axios from 'axios';
 const baseURL = process.env.API_BASE_URL;
-console.log("baseURL", baseURL)
 
 export const Client = {
     fetchData(url, { headers = {}, method = 'get', data }) {

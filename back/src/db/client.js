@@ -1,4 +1,4 @@
-const Client = require('pg').Client;
+const { Pool } = require('pg');
 
 const databaseConfig = {
     host: process.env.PGHOST,
@@ -8,12 +8,25 @@ const databaseConfig = {
     database: process.env.PGDATABASE,
 }; 
 
-const client = new Client({ databaseConfig })
+const pool = new Pool({ databaseConfig })
 
-client.on('connect', () => {
+pool.on('error', (err, client) => {
+    console.error('Unexpected error on idle client', err)
+    process.exit(-1)
+})
+
+pool.on('connect', () => {
     console.log('connected!');
 });
 
-client.connect();
+pool.connect().then(client => {
+    return client.query('SELECT * FROM users WHERE id = $1', [1]).then(res => {
+        client.release()
+        console.log(res.rows[0])
+    }).catch(err => {
+        client.release();
+        console.log(err.stack);
+    });
+});
 
-module.exports = client;
+module.exports = pool;

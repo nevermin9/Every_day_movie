@@ -15,6 +15,7 @@ class User {
             const text = 'INSERT INTO users(name, email, password_hash, created_on) VALUES($1, $2, $3, to_timestamp($4)) RETURNING *';
             const values = [this.name, this.email, this.passwordHash, this.createdOn];
 
+            console.log("User -> addUserToDatabase -> client", client)
             return client.query(text, values).catch(err => Promise.reject(new Error(err))).finally(() => client.end());
         });
     }

@@ -5,25 +5,32 @@ const SECRET_KEY = process.env.SECRET_KEY;
 const STORAGE_KEY = process.env.STORAGE_KEY;
 
 export default class StoreKeeper {
-    constructor(storeObj) {
+    constructor() {
         this.cryptoStore = '';
     }
 
-    saveStateToStorage() {
-        window.localStorage.setItem(STORAGE_KEY, this.cryptoStore);
-    }
-
     getStateFromStorage() {
-        return window.localStorage.getItem(STORAGE_KEY) || {};
+        const encryptedStore = window.localStorage.getItem(STORAGE_KEY);
+        if (encryptedStore && encryptedStore !== 'undefined') {
+            return this._decryptStore(encryptedStore);
+        } else {
+            return {};
+        }
     }
 
     encryptStore(state) {
+        console.log("StoreKeeper -> encryptStore -> state", state)
         this.cryptoStore = AES.encrypt(JSON.stringify(state), SECRET_KEY).toString();
+        this._saveStateToStorage();
 
         return this;
     }
 
-    decryptStore(str) {
+    _saveStateToStorage() {
+        window.localStorage.setItem(STORAGE_KEY, this.cryptoStore);
+    }
+
+    _decryptStore(str) {
         return JSON.parse(AES.decrypt(str, SECRET_KEY).toString(EncUtf8));
     }
 }

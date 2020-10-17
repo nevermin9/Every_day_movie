@@ -12,10 +12,16 @@ export default class PubSub {
     }
 
     publish(event, data = {}) {
-        if (this.events.hasOwnProperty(event)) {
+        console.log("PubSub -> publish -> event", event)
+        console.log("PubSub -> publish -> this.events", this.events)
+        console.log(Object.keys(this.events).includes(event))
+        console.log(Object.keys(this.events).indexOf(event))
+        if (!this.events.hasOwnProperty(event)) {
+            console.log('there is no such event')
             return [];
         }
 
+        console.log("PubSub -> publish -> this.events", this.events)
         return this.events[event].map(cb => cb(data));
     }
 }

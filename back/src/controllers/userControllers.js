@@ -6,6 +6,7 @@ const jwtHandlers = require('../helpers/jwtHandlers');
 module.exports = {
     createUser(req, res) {
         const { email, password, name } = req.body;
+        console.log("createUser -> email, password, name", email, password, name)
         
         if ([email, password, name].some(validation.isEmpty)) {
             statuses.errorMessage.error = 'Email, password, first name and last name field cannot be empty';
@@ -37,6 +38,7 @@ module.exports = {
             res.statusCode = statuses.status.created;
             res.end(JSON.stringify(statuses.successMessage));
         }).catch(error => {
+            console.log("createUser -> error", error)
             if (error.routine === '_bt_check_unique') {
                 statuses.errorMessage.error = 'User with that EMAIL already exist';
                 res.statusCode = statuses.status.conflict;
